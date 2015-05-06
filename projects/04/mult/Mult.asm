@@ -7,3 +7,46 @@
 // (R0, R1, R2 refer to RAM[0], RAM[1], and RAM[2], respectively.)
 
 // Put your code here.
+
+// i = 0
+// total = 0
+// if i < R1: / i - R1 < 0
+//   total = total + R0
+// end
+
+
+@i
+M = 0
+
+@total
+M = 0
+
+(LOOP)
+    @total
+    D=M
+    @R2
+    M=D
+
+    @i
+    D=M
+    @R1
+    D=D-M
+    @END
+    D;JGE
+    @R0
+    D = M
+    @total
+    M = D+M
+    @i
+    M=M+1
+
+    @LOOP
+    0;JMP
+
+(END)
+    @END
+    0;JMP
+
+
+
+
