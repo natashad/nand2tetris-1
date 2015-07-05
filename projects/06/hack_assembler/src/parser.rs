@@ -3,11 +3,6 @@ pub struct Parser {
     pos : usize,
 }
 
-pub struct InstructionList {
-    instructions : Vec<Instruction>,
-    pos : usize,
-}
-
 pub struct Instruction {
     instr_type: InstructionType,
     symbol: String,
@@ -20,106 +15,118 @@ pub enum InstructionType {
     // If starts with 0 then A, if starts with 1 then C
     A,
     C,
-    Invalid
 }
 
-impl Parser {
-    fn eof(&self) -> bool {
-        self.pos >= self.input.len()
-    }
+pub type InstructionList = Vec<Instruction>;
 
-    fn parse_instruction(&mut self) -> Instruction {
-        let mut inst = Instruction {
-            instr_type : InstructionType::Invalid,
-            symbol : String::new(),
-            dest : String::new(),
-            cmd : String::new(),
-            jump : String::new()
-        };
-        while !self.eof() {
-            self.consume_whitespace();
-            if self.next_char() == '@' {
-                assert!(self.consume_char()=='@');
-                inst.instr_type = InstructionType::A;
-                inst.symbol = self.parse_symbol();
-            } else {
-                inst.instr_type = InstructionType::C;
-                inst.dest = self.parse_dest();
-                inst.cmd = self.parse_command();
-                inst.jump = self.parse_jump();
+
+pub fn parse_asm(input : String) -> InstructionList
+{
+
+    let mut instructions = InstructionList::new();
+    let lines: Vec<&str> = input.lines().collect();
+    let mut it = lines.iter();
+    loop {
+        match it.next() {
+            Some(raw_line) => {
+                let mut line = strip_comments_and_trim(raw_line.to_string());
+                if (line.is_empty()) {
+                    continue;
+                }
+                if line.starts_with('@') {
+                    assert!(line.remove(0) == '@');
+                    let mut val = String::new();
+                    match val.parse::<u32>() {
+                        Ok(_) => {
+                            val = u32::from_str_radix(&line, 2).unwrap().to_string();
+                        }
+                        Err(_) => {
+                            val = String::new() //handle symbol
+                        }
+                    }
+                    instructions.push(Instruction {
+                        instr_type: InstructionType::A,
+                        symbol: val,
+                        dest: String::new(),
+                        cmd: String::new(),
+                        jump: String::new(),
+                    });
+                } else {
+                    let mut dest = String::new();
+                    let mut cmd = String::new();
+                    let mut jmp = String::new();
+                    let mut char_it = line.chars();
+                    loop {
+                        match char_it.next() {
+                            Some(x) => {
+                                if (x == '=') {
+                                    match char_it.next() {
+                                        Some(y) => {
+                                            if (y == ';') {
+                                                match char_it.next() {
+                                                    Some(z) => {
+                                                        jmp.push(z);
+                                                    }
+                                                    None => break,
+                                                }
+                                            } else {
+                                                cmd.push(y);
+                                            }
+                                        }
+                                        None => break,
+                                    }
+                                } else {
+                                    dest.push(x);
+                                }
+                            }
+                            None => break,
+                        }
+                    }
+                    instructions.push(Instruction {
+                        instr_type: InstructionType::C,
+                        symbol: String::new(),
+                        dest: dest,
+                        cmd: cmd,
+                        jump: jmp,
+                    })
+                }
             }
-        }
-        return inst;
-
-    }
-
-    fn parse_symbol(&mut self) -> String {
-        let mut val = self.consume_till_newline();
-        match val.parse::<u32>() {
-            Ok(_) => u32::from_str_radix(&self.input, 2).unwrap().to_string(),
-            Err(_) => String::new() //handle symbol
+            None => break,
         }
     }
-
-    fn parse_dest(&mut self) -> String {
-        let mut val = self.consume_while(|c| c != '=');
-        assert!(self.consume_char() == '=');
-        return val;
-    }
-
-    fn parse_command(&mut self) -> String {
-        //Instead, do a search for ';' in the string. pass in command at a time
-        let mut val = self.consume_while(|c| c != ';' || c != '\n' || c != '/');
-        val.trim();
-        if self.next_char() == ';' {
-            self.consume_char();
-        }
-        return val;
-    }
-
-    fn parse_jump(&mut self) -> String {
-        String::new();
-    }
-
-    fn consume_till_newline(&mut self) -> String {
-        let ret = self.consume_while(|c| c != '\n' || c != '/');
-        self.consume_whitespace();
-        return ret;
-    }
-
-    fn consume_whitespace(&mut self) -> String {
-        self.consume_while(char::is_whitespace)
-    }
-
-    fn consume_comment(&mut self) {
-        if self.next_char() == '/' {
-            self.consume_till_newline();
-        }
-    }
-
-    fn consume_while<F>(&mut self, f: F) -> String where F : Fn(char) -> bool {
-        let mut ret = String::new();
-        while !self.eof() && f(self.next_char()) {
-            ret.push(self.consume_char());
-        }
-        return ret;
-    }
-
-    fn consume_char(&mut self) -> char {
-        let mut it = self.input[self.pos..].char_indices();
-        let (_, ret) = it.next().unwrap();
-        let (next_pos, _) = it.next().unwrap_or((1, ' '));
-        self.pos += next_pos;
-        return ret;
-    }
-
-    fn next_char(&mut self) -> char {
-        self.input[self.pos..].chars().next().unwrap()
-    }
+    return instructions;
 }
 
-impl InstructionList {
-    fn has_more_instructions(&self) -> bool {
-        self.pos >= self.instructions.len()
-    }
+fn parse_symbol(line: String) -> String {
+    String::new()
 }
+
+fn strip_comments_and_trim(line: String) -> String {
+    let mut stripped = String::new();
+    let mut it = line.chars();
+    loop {
+        match it.next() {
+            Some(x) => {
+                stripped.push(x);
+                if x == '/' {
+                    match it.next() {
+                        Some(y) => {
+                            if y == '/' {
+                                stripped.pop();
+                                break;
+                            } else {
+                                stripped.push(y)
+                            }
+                        }
+                        None => break,
+                    }
+                }
+
+            }
+            None => break,
+        }
+    }
+    return stripped.trim().to_string();
+}
+
+
