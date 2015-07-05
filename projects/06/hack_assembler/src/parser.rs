@@ -1,8 +1,4 @@
-pub struct Parser {
-    input : String,
-    pos : usize,
-}
-
+#[derive(Debug)]
 pub struct Instruction {
     instr_type: InstructionType,
     symbol: String,
@@ -11,8 +7,9 @@ pub struct Instruction {
     jump: String,
 }
 
+#[derive(Debug)]
 pub enum InstructionType {
-    // If starts with 0 then A, if starts with 1 then C
+    // If starts with @ then A, C otherwise.
     A,
     C,
 }
@@ -30,7 +27,7 @@ pub fn parse_asm(input : String) -> InstructionList
         match it.next() {
             Some(raw_line) => {
                 let mut line = strip_comments_and_trim(raw_line.to_string());
-                if (line.is_empty()) {
+                if line.is_empty() {
                     continue;
                 }
                 if line.starts_with('@') {
@@ -59,21 +56,28 @@ pub fn parse_asm(input : String) -> InstructionList
                     loop {
                         match char_it.next() {
                             Some(x) => {
-                                if (x == '=') {
-                                    match char_it.next() {
-                                        Some(y) => {
-                                            if (y == ';') {
-                                                match char_it.next() {
-                                                    Some(z) => {
-                                                        jmp.push(z);
+                                if !line.contains('=') || x == '=' {
+                                    if x != '=' {
+                                        cmd.push(x);
+                                    }
+                                    loop {
+                                        match char_it.next() {
+                                            Some(y) => {
+                                                if y == ';' {
+                                                    loop {
+                                                        match char_it.next() {
+                                                            Some(z) => {
+                                                                jmp.push(z);
+                                                            }
+                                                            None => break,
+                                                        }
                                                     }
-                                                    None => break,
+                                                } else {
+                                                    cmd.push(y);
                                                 }
-                                            } else {
-                                                cmd.push(y);
                                             }
+                                            None => break,
                                         }
-                                        None => break,
                                     }
                                 } else {
                                     dest.push(x);
@@ -95,10 +99,6 @@ pub fn parse_asm(input : String) -> InstructionList
         }
     }
     return instructions;
-}
-
-fn parse_symbol(line: String) -> String {
-    String::new()
 }
 
 fn strip_comments_and_trim(line: String) -> String {
