@@ -32,13 +32,13 @@ pub fn parse_asm(input : String) -> InstructionList
                 }
                 if line.starts_with('@') {
                     assert!(line.remove(0) == '@');
-                    let mut val = String::new();
-                    match val.parse::<u32>() {
-                        Ok(_) => {
-                            val = u32::from_str_radix(&line, 2).unwrap().to_string();
+                    let mut val;
+                    match line.parse::<i16>() {
+                        Ok(x) => {
+                            val = format!("{:015b}", x);
                         }
                         Err(_) => {
-                            val = String::new() //handle symbol
+                            val = "This should be a symbo".to_string(); //handle symbol
                         }
                     }
                     instructions.push(Instruction {
