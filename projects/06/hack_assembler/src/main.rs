@@ -2,11 +2,20 @@ use std::io::Read;
 use std::fs::File;
 
 pub mod parser;
+pub mod code;
 
 fn main() {
-    let asm = read_source("../add/Add.asm".to_string());
+    let asm = read_source("../pong/PongL.asm".to_string());
     let instructions = parser::parse_asm(asm);
-    println!("{:?}", instructions);
+    //println!("{:?}", instructions);
+
+    let mut it = instructions.iter();
+    loop {
+        match it.next() {
+            Some(x) =>  println!("{}", code::Code::new(x).to_string()),
+            None => break
+        }
+    }
 }
 
 fn read_source(filename: String) -> String {

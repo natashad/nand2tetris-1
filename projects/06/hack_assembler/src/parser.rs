@@ -1,10 +1,10 @@
 #[derive(Debug)]
 pub struct Instruction {
-    instr_type: InstructionType,
-    symbol: String,
-    dest: String,
-    cmd: String,
-    jump: String,
+    pub instr_type: InstructionType,
+    pub symbol: String,
+    pub dest: String,
+    pub comp: String,
+    pub jump: String,
 }
 
 #[derive(Debug)]
@@ -45,12 +45,12 @@ pub fn parse_asm(input : String) -> InstructionList
                         instr_type: InstructionType::A,
                         symbol: val,
                         dest: String::new(),
-                        cmd: String::new(),
+                        comp: String::new(),
                         jump: String::new(),
                     });
                 } else {
                     let mut dest = String::new();
-                    let mut cmd = String::new();
+                    let mut comp = String::new();
                     let mut jmp = String::new();
                     let mut char_it = line.chars();
                     loop {
@@ -58,7 +58,7 @@ pub fn parse_asm(input : String) -> InstructionList
                             Some(x) => {
                                 if !line.contains('=') || x == '=' {
                                     if x != '=' {
-                                        cmd.push(x);
+                                        comp.push(x);
                                     }
                                     loop {
                                         match char_it.next() {
@@ -73,7 +73,7 @@ pub fn parse_asm(input : String) -> InstructionList
                                                         }
                                                     }
                                                 } else {
-                                                    cmd.push(y);
+                                                    comp.push(y);
                                                 }
                                             }
                                             None => break,
@@ -90,7 +90,7 @@ pub fn parse_asm(input : String) -> InstructionList
                         instr_type: InstructionType::C,
                         symbol: String::new(),
                         dest: dest,
-                        cmd: cmd,
+                        comp: comp,
                         jump: jmp,
                     })
                 }
