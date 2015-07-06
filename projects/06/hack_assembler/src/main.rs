@@ -9,8 +9,14 @@ use getopts::Options;
 
 pub mod parser;
 pub mod code;
+pub mod symbol_table;
 
 fn main() {
+
+    ///////////////////////////////////////
+    // Read and parse command line args //
+    /////////////////////////////////////
+
     let args: Vec<String> = env::args().collect();
     let mut opts = Options::new();
     opts.optopt("o", "", "set output file name", "NAME");
@@ -30,10 +36,12 @@ fn main() {
         None => in_fname.replace(".asm", ".hack")
     };
 
+    let mut symbol_table = symbol_table::SymbolTable::new();
 
     let asm = read_source(in_fname);
-    let instructions = parser::parse_asm(asm);
-    //println!("{:?}", instructions);
+
+    parser::parse_symbols(asm.clone(), &mut symbol_table);
+    let instructions = parser::parse_asm(asm.clone(), &mut symbol_table);
 
     let mut it = instructions.iter();
     let mut output = String::new();
@@ -47,9 +55,12 @@ fn main() {
         }
     }
 
-    write_out(out_fname, output);
-    //println!("{}", output);
+    write_out(out_fname, output).ok().expect("failed to write to file");
 }
+
+/////////////////
+// IO helpers //
+///////////////
 
 fn read_source(filename: String) -> String {
     let mut str = String::new();

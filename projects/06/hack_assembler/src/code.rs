@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 
-
 use parser;
 
 pub struct Code {

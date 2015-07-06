@@ -1,3 +1,5 @@
+use symbol_table;
+
 #[derive(Debug)]
 pub struct Instruction {
     pub instr_type: InstructionType,
@@ -17,17 +19,45 @@ pub enum InstructionType {
 pub type InstructionList = Vec<Instruction>;
 
 
-pub fn parse_asm(input : String) -> InstructionList
-{
-
-    let mut instructions = InstructionList::new();
+pub fn parse_symbols(input : String, table: &mut symbol_table::SymbolTable) {
     let lines: Vec<&str> = input.lines().collect();
     let mut it = lines.iter();
+
+    let mut line_count = 0;
     loop {
         match it.next() {
             Some(raw_line) => {
                 let mut line = strip_comments_and_trim(raw_line.to_string());
                 if line.is_empty() {
+                    continue;
+                }
+                if line.starts_with('(') {
+                    assert!(line.remove(0) == '(');
+                    assert!(line.pop().unwrap() == ')');
+                    let sym = line.trim();
+                    assert!(!table.contains(sym.to_string()));
+                    table.insert(sym.to_string(), line_count);
+                } else {
+                    line_count+=1;
+                }
+            }
+            None => break
+        }
+    }
+}
+
+pub fn parse_asm(input : String, table: &mut symbol_table::SymbolTable) -> InstructionList
+{
+
+    let mut instructions = InstructionList::new();
+    let lines: Vec<&str> = input.lines().collect();
+    let mut it = lines.iter();
+    let mut variable_counter = 16;
+    loop {
+        match it.next() {
+            Some(raw_line) => {
+                let mut line = strip_comments_and_trim(raw_line.to_string());
+                if line.is_empty() || line.starts_with('(') {
                     continue;
                 }
                 if line.starts_with('@') {
@@ -38,7 +68,14 @@ pub fn parse_asm(input : String) -> InstructionList
                             val = format!("{:015b}", x);
                         }
                         Err(_) => {
-                            val = "This should be a symbo".to_string(); //handle symbol
+                            if table.contains(line.clone()) {
+                                val = format!("{:015b}", &table.get(line));
+                            }
+                            else {
+                                val = format!("{:015b}", variable_counter);
+                                table.insert(line, variable_counter);
+                                variable_counter += 1;
+                            }
                         }
                     }
                     instructions.push(Instruction {
